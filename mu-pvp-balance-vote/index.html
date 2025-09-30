@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MU Online PvP Balance Vote</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+<style>
+html, body {
+  height: 100%;
+}
+
+body {
+    background-color: #2b3035;
+    color: #ffffff;
+}
+
+.hidden {
+    display: none;
+}
+
+.btn-discord {
+  --bs-btn-font-weight: 600;
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: #5865f2;
+  --bs-btn-border-color: #3a3fa4;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #3a3fa4;
+  --bs-btn-hover-border-color: #5865f2;
+  --bs-btn-focus-shadow-rgb: #5865f2;
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #2e3085;
+  --bs-btn-active-border-color: #2e3085;
+}
+
+table {
+  width: auto !important;
+}
+
+td:has(select option[value="1"]:checked) {
+  --bs-text-opacity: 1;
+  background-color: rgba(var(--bs-success-rgb),var(--bs-text-opacity));
+}
+td:has(select option[value="0"]:checked) {
+  --bs-text-opacity: 1;
+  background-color: rgba(var(--bs-secondary-rgb),var(--bs-text-opacity));
+}
+td:has(select option[value="-1"]:checked) {
+  --bs-text-opacity: 1;
+  background-color: rgba(var(--bs-danger-rgb),var(--bs-text-opacity));
+}
+</style>  
+</head>
+
+<body translate="no">
+    <div id="unauthorized" class="hidden h-100">
+        <div class="d-flex align-items-center py-4 h-100">
+            <div class="w-100 m-auto p-4" style="max-width: 330px">
+                <a id="login" class="btn btn-primary btn-lg btn-discord w-100" href="https://discord.com/oauth2/authorize?client_id=1422665992257142815&response_type=token&redirect_uri=http%3A%2F%2F127.0.0.1%3A8080%2Fmu-pvp-balance-vote%2F&scope=identify">Sign in with Discord</a>
+            </div>
+        </div>
+    </div>
+    <div id="authorized" class="hidden h-100">
+        <div class="container py-5">
+            <div class="d-flex align-items-center py-2">
+                <img id="discord-avatar" class="rounded-circle me-2" style="width: 32px" />
+                <span id="discord-username" class="fw-semibold"></span>
+            </div>
+            <form id="form">
+                <h1>MU Online PvP Balance Vote</h1>
+        
+                <h3 class="mt-4">Choose a starting balance:</h3>
+        
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="preset" id="preset-webzen" checked="">
+                    <label class="form-check-label" for="preset-webzen">
+                    Webzen style – Similar to official MU Online balance (Elves mostly support, Rage Fighter very strong).
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="preset" id="preset-equal">
+                    <label class="form-check-label" for="preset-equal">
+                    Equal chance – Every class is equal against every other (all fights are draws by default).
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="preset" id="preset-custom">
+                    <label class="form-check-label" for="preset-custom">
+                    Custom – Adjust each matchup yourself below.
+                    </label>
+                </div>
+        
+                <p class="mt-4">Below is the voting table where you can make finer adjustments to class matchups.</p>
+                <ul>
+                    <li>Each square represents a 1-on-1 duel outcome between two classes.</li>
+                    <li>Changing one matchup automatically updates the opposite one (DW vs DK).</li>
+                    <li>Same-class matchups (e.g. DK vs DK) are always draws.</li>
+                </ul>
+                <div id="balance-form" class="my-4">
+                    <table class="table table-bordered table-dark" data-bs-theme="dark"><tbody><tr><td>&nbsp;vs.&nbsp;</td><td>DK</td><td>DW</td><td>FE</td><td>SU</td><td>MG</td><td>RF</td><td>DL</td></tr><tr><td>DK</td><td><select class="form-select" id="DK_DK" name="DK_DK" disabled=""><option value="1">DK</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="DK_DW" name="DK_DW"><option value="1">DK</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="DK_FE" name="DK_FE"><option value="1">DK</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="DK_SU" name="DK_SU"><option value="1">DK</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="DK_MG" name="DK_MG"><option value="1">DK</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="DK_RF" name="DK_RF"><option value="1">DK</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="DK_DL" name="DK_DL"><option value="1">DK</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>DW</td><td><select class="form-select" id="DW_DK" name="DW_DK"><option value="1">DW</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="DW_DW" name="DW_DW" disabled=""><option value="1">DW</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="DW_FE" name="DW_FE"><option value="1">DW</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="DW_SU" name="DW_SU"><option value="1">DW</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="DW_MG" name="DW_MG"><option value="1">DW</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="DW_RF" name="DW_RF"><option value="1">DW</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="DW_DL" name="DW_DL"><option value="1">DW</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>FE</td><td><select class="form-select" id="FE_DK" name="FE_DK"><option value="1">FE</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="FE_DW" name="FE_DW"><option value="1">FE</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="FE_FE" name="FE_FE" disabled=""><option value="1">FE</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="FE_SU" name="FE_SU"><option value="1">FE</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="FE_MG" name="FE_MG"><option value="1">FE</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="FE_RF" name="FE_RF"><option value="1">FE</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="FE_DL" name="FE_DL"><option value="1">FE</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>SU</td><td><select class="form-select" id="SU_DK" name="SU_DK"><option value="1">SU</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="SU_DW" name="SU_DW"><option value="1">SU</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="SU_FE" name="SU_FE"><option value="1">SU</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="SU_SU" name="SU_SU" disabled=""><option value="1">SU</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="SU_MG" name="SU_MG"><option value="1">SU</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="SU_RF" name="SU_RF"><option value="1">SU</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="SU_DL" name="SU_DL"><option value="1">SU</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>MG</td><td><select class="form-select" id="MG_DK" name="MG_DK"><option value="1">MG</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="MG_DW" name="MG_DW"><option value="1">MG</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="MG_FE" name="MG_FE"><option value="1">MG</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="MG_SU" name="MG_SU"><option value="1">MG</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="MG_MG" name="MG_MG" disabled=""><option value="1">MG</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="MG_RF" name="MG_RF"><option value="1">MG</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="MG_DL" name="MG_DL"><option value="1">MG</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>RF</td><td><select class="form-select" id="RF_DK" name="RF_DK"><option value="1">RF</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="RF_DW" name="RF_DW"><option value="1">RF</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="RF_FE" name="RF_FE"><option value="1">RF</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="RF_SU" name="RF_SU"><option value="1">RF</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="RF_MG" name="RF_MG"><option value="1">RF</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="RF_RF" name="RF_RF" disabled=""><option value="1">RF</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="RF_DL" name="RF_DL"><option value="1">RF</option><option value="0">-</option><option value="-1">DL</option></select></td></tr><tr><td>DL</td><td><select class="form-select" id="DL_DK" name="DL_DK"><option value="1">DL</option><option value="0">-</option><option value="-1">DK</option></select></td><td><select class="form-select" id="DL_DW" name="DL_DW"><option value="1">DL</option><option value="0">-</option><option value="-1">DW</option></select></td><td><select class="form-select" id="DL_FE" name="DL_FE"><option value="1">DL</option><option value="0">-</option><option value="-1">FE</option></select></td><td><select class="form-select" id="DL_SU" name="DL_SU"><option value="1">DL</option><option value="0">-</option><option value="-1">SU</option></select></td><td><select class="form-select" id="DL_MG" name="DL_MG"><option value="1">DL</option><option value="0">-</option><option value="-1">MG</option></select></td><td><select class="form-select" id="DL_RF" name="DL_RF"><option value="1">DL</option><option value="0">-</option><option value="-1">RF</option></select></td><td><select class="form-select" id="DL_DL" name="DL_DL" disabled=""><option value="1">DL</option><option value="0">-</option><option value="-1">DL</option></select></td></tr></tbody></table>
+                </div>
+        
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-vote" style="max-width: 330px;">
+                    <div class="spinner-grow spinner-grow-sm hidden" role="status" id="submit-vote-spinner">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Vote</span>
+                </button>
+            </form>
+        </div>
+    </div>
+<script>
+let authorized = null;
+let data = null;
+
+const classes = ["DK", "DW", "FE", "SU", "MG", "RF", "DL"];
+
+// const balance = Object.fromEntries(
+//   classes.flatMap(c1 =>
+//     classes.map(c2 => ([`${c1}_${c2}`, 0]))
+//   )
+// );
+
+let balance = getPresets().webzen;
+updateTable();
+
+const optionPresetWebzen = document.getElementById("preset-webzen");
+optionPresetWebzen.addEventListener("change", () => {
+    balance = getPresets().webzen;
+    updateTable();
+});
+const optionPresetEqual = document.getElementById("preset-equal");
+optionPresetEqual.addEventListener("change", () => {
+    balance = getPresets().equal;
+    updateTable();
+});
+const optionPresetCustom = document.getElementById("preset-custom");
+
+function renderTable() {
+    const table = document.createElement("table");
+    table.className = "table table-bordered table-dark";
+    table.dataset.bsTheme = "dark";
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+
+    const headerRow = document.createElement("tr");
+    const blank = document.createElement("td");
+    blank.innerHTML = "&nbsp;vs.&nbsp;";
+    headerRow.appendChild(blank);
+    for (const c of classes) {
+        const td = document.createElement("td");
+        td.textContent = c;
+        headerRow.appendChild(td);
+    }
+    tbody.appendChild(headerRow);
+
+    for (const c1 of classes) {
+        const tr = document.createElement("tr");
+        tbody.appendChild(tr);
+        const td = document.createElement("td");
+        td.innerHTML = c1;
+        tr.appendChild(td);
+
+        for (const c2 of classes) {
+            const td = document.createElement("td");
+            tr.appendChild(td);
+            const select = renderSelect(c1, c2);
+            td.appendChild(select);
+        }
+    }
+
+  return table;
+}
+
+function renderSelect(c1, c2) {
+    const select = document.createElement("select");
+    select.className = "form-select";
+    select.id = `${c1}_${c2}`;
+    select.name = `${c1}_${c2}`;
+
+    const optionWin = document.createElement("option");
+    select.appendChild(optionWin);
+    optionWin.innerHTML = c1;
+    optionWin.value = 1;
+
+    const optionDraw = document.createElement("option");
+    select.appendChild(optionDraw);
+    optionDraw.innerHTML = "-";
+    optionDraw.value = 0;
+
+    const optionLose = document.createElement("option");
+    select.appendChild(optionLose);
+    optionLose.innerHTML = c2;
+    optionLose.value = -1;
+
+    if (c1 === c2) {
+        select.disabled = true;
+        optionDraw.selected = true;
+
+        return select;
+    }
+
+    select.value = balance[`${c1}_${c2}`];
+
+    select.addEventListener("change", e => {
+        const value = Number(e.target.value);
+        balance[`${c1}_${c2}`] = value;
+        balance[`${c2}_${c1}`] = -value;
+        document.getElementById(`${c2}_${c1}`).value = -value;
+        optionPresetCustom.checked = true;
+    });
+
+    return select;
+}
+
+function updateTable() {
+    const table = renderTable();
+    const balanceForm = document.getElementById("balance-form");
+    balanceForm.innerHTML = "";
+    balanceForm.appendChild(table);
+}
+
+function getPresets() {
+    const PRESET_WEBZEN = {
+        "DK_DK": 0,
+        "DK_DW": 1,
+        "DK_FE": 1,
+        "DK_SU": 1,
+        "DK_MG": -1,
+        "DK_RF": -1,
+        "DK_DL": 0,
+        "DW_DK": -1,
+        "DW_DW": 0,
+        "DW_FE": 1,
+        "DW_SU": 0,
+        "DW_MG": -1,
+        "DW_RF": -1,
+        "DW_DL": -1,
+        "FE_DK": -1,
+        "FE_DW": -1,
+        "FE_FE": 0,
+        "FE_SU": -1,
+        "FE_MG": -1,
+        "FE_RF": -1,
+        "FE_DL": -1,
+        "SU_DK": -1,
+        "SU_DW": 0,
+        "SU_FE": 1,
+        "SU_SU": 0,
+        "SU_MG": -1,
+        "SU_RF": -1,
+        "SU_DL": -1,
+        "MG_DK": 1,
+        "MG_DW": 1,
+        "MG_FE": 1,
+        "MG_SU": 1,
+        "MG_MG": 0,
+        "MG_RF": -1,
+        "MG_DL": 1,
+        "RF_DK": 1,
+        "RF_DW": 1,
+        "RF_FE": 1,
+        "RF_SU": 1,
+        "RF_MG": 1,
+        "RF_RF": 0,
+        "RF_DL": -1,
+        "DL_DK": 0,
+        "DL_DW": 1,
+        "DL_FE": 1,
+        "DL_SU": 1,
+        "DL_MG": -1,
+        "DL_RF": 1,
+        "DL_DL": 0,
+    };
+
+    const PRESET_EQUAL = {
+        "DK_DK": 0,
+        "DK_DW": 0,
+        "DK_FE": 0,
+        "DK_SU": 0,
+        "DK_MG": 0,
+        "DK_RF": 0,
+        "DK_DL": 0,
+        "DW_DK": 0,
+        "DW_DW": 0,
+        "DW_FE": 0,
+        "DW_SU": 0,
+        "DW_MG": 0,
+        "DW_RF": 0,
+        "DW_DL": 0,
+        "FE_DK": 0,
+        "FE_DW": 0,
+        "FE_FE": 0,
+        "FE_SU": 0,
+        "FE_MG": 0,
+        "FE_RF": 0,
+        "FE_DL": 0,
+        "SU_DK": 0,
+        "SU_DW": 0,
+        "SU_FE": 0,
+        "SU_SU": 0,
+        "SU_MG": 0,
+        "SU_RF": 0,
+        "SU_DL": 0,
+        "MG_DK": 0,
+        "MG_DW": 0,
+        "MG_FE": 0,
+        "MG_SU": 0,
+        "MG_MG": 0,
+        "MG_RF": 0,
+        "MG_DL": 0,
+        "RF_DK": 0,
+        "RF_DW": 0,
+        "RF_FE": 0,
+        "RF_SU": 0,
+        "RF_MG": 0,
+        "RF_RF": 0,
+        "RF_DL": 0,
+        "DL_DK": 0,
+        "DL_DW": 0,
+        "DL_FE": 0,
+        "DL_SU": 0,
+        "DL_MG": 0,
+        "DL_RF": 0,
+        "DL_DL": 0
+    };
+
+    return {
+        "webzen": PRESET_WEBZEN,
+        "equal": PRESET_EQUAL
+    };
+}
+
+document.getElementById("form").addEventListener("submit", e => {
+    e.preventDefault();
+});
+
+document.getElementById("submit-vote").addEventListener("click", async () => {
+    const spinner = document.getElementById("submit-vote-spinner");
+
+    spinner.classList.toggle("hidden", false);
+    try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbwXVcZDwdArCfj9o1t-qpbF-oLBxtH4s7zwuGr4lL3PIxRqt6-AIw1imngGtdyYTF61/exec", {
+            method: "POST",
+            body: JSON.stringify({
+                token_type: data.token_type,
+                access_token: data.access_token,
+                id: data.id,
+                global_name: data.global_name,
+                ...balance,
+            })
+        });
+        const json = await response.json();
+        if (json.result === "success") {
+            window.location.replace("success");
+            return;
+        }
+    } catch (e) {
+
+    }
+    spinner.classList.toggle("hidden", true);
+});
+
+addEventListener("DOMContentLoaded", async () => {
+    if (authorized !== null) {
+        updateView();
+        return;
+    }
+
+    const params = new URLSearchParams(location.hash.substr(1));
+    const token_type = params.get("token_type");
+    const access_token = params.get("access_token");
+
+    if (!access_token) {
+        authorized = false;
+        updateView();
+        return;
+    }
+
+    try {
+        const response = await fetch("https://discord.com/api/users/@me", {
+            headers: {
+                Authorization: `${token_type} ${access_token}`,
+            }
+        });
+        const json = await response.json();
+        authorized = true;
+        data = {
+            token_type,
+            access_token,
+            ...json,
+        };
+
+        const discordAvatar = document.getElementById("discord-avatar");
+        discordAvatar.src = `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.png`;
+        const discordUsername = document.getElementById("discord-username");
+        discordUsername.textContent = json.global_name;
+    } catch (e) {
+        authorized = false;
+    }
+    updateView();
+});
+
+function updateView() {
+    const viewUnauthorized = document.getElementById("unauthorized");
+    const viewAuthorized = document.getElementById("authorized");
+
+    viewUnauthorized.classList.toggle("hidden", authorized !== false);
+    viewAuthorized.classList.toggle("hidden", authorized !== true);
+}
+</script>
+</body>
+</html>
