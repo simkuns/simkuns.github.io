@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./calculator.js"></script>
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            #calculator {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="calculator"></div>
+        <script type="module">
+            import { predict, train_epoch } from "./multi_sigmoid.js";
+
+            const el = document.getElementById("calculator");
+            const calculator = Desmos.Calculator3D(el, {
+                invertedColors: true,
+                translucentSurfaces: true,
+                // perspectiveDistortion: 20,
+                colors: {
+                    GRAY: "#cccccc",
+                },
+            });
+
+            const Y_REAL = [
+                predict([0, 0], [[-1, 2, 2], [3, -2, -2], [-1.3, 1, 1]]),
+                predict([0, 1], [[-1, 2, 2], [3, -2, -2], [-1.3, 1, 1]]),
+                predict([1, 0], [[-1, 2, 2], [3, -2, -2], [-1.3, 1, 1]]),
+                predict([1, 1], [[-1, 2, 2], [3, -2, -2], [-1.3, 1, 1]]),
+            ];
+            console.log("real: ", Y_REAL); // Array(4) [ 0, 1, 1, 0 ]
+
+            // XOR
+            const D = [
+                [[0, 0], 0],
+                [[0, 1], 1],
+                [[1, 0], 1],
+                [[1, 1], 0],
+            ];
+
+            const R = 10;
+            const STEPS = 500;
+            const SNAPSHOTS = [
+                snap([arr_rand(3), arr_rand(3), arr_rand(3)], 0),
+            ];
+            for (let step = 1; step < STEPS; step++) {
+                const {w, error} = train_epoch(D, SNAPSHOTS[step-1].w, R);
+                SNAPSHOTS.push(
+                    snap(w, error),
+                );
+            }
+
+            function arr_rand(length) {
+                return Array.from({ length }, () => Math.random() * 2 - 1);
+            }
+
+            function snap(w, error) {
+                return {
+                    w,
+                    error,
+                    y_train: [
+                        predict([0, 0], w),
+                        predict([0, 1], w),
+                        predict([1, 0], w),
+                        predict([1, 1], w),
+                    ],
+                };
+            }
+
+            function init() {
+                calculator.setExpressions([
+                    {
+                        id: 'note1',
+                        type: 'text',
+                        text: 'refresh page for new random initial values',
+                    },
+                    {
+                        id: "step",
+                        latex: "t_{step}=0",
+                        sliderBounds: {min: 0, max: STEPS - 1, step: 1},
+                    },
+                ]);
+            }
+            init();
+
+            function update(step = 0) {
+                const { w, error, y_train } = SNAPSHOTS[step];
+
+                calculator.setExpressions([
+                    {
+                        id: 'table1',
+                        type: 'table',
+                        columns: [
+                            {
+                                latex: 'x_{1}',
+                                values: D.flatMap(([x, d]) => x.at(0)),
+                            },
+                            {
+                                latex: 'x_{2}',
+                                values: D.flatMap(([x, d]) => x.at(1)),
+                            },
+                            {
+                                latex: 'y_{real}',
+                                values: Y_REAL,
+                            },
+                            {
+                                latex: 'y_{train}',
+                                values: y_train,
+                            },
+                        ],
+                    },
+                    {
+                        id: 'error',
+                        latex: `C_{error}=${error}`,
+                    },
+                    {
+                        id: 'learning_rate',
+                        latex: `C_{learningRate}=${R}`,
+                    },
+                    ...w.flat().map((v, i) => ({
+                        id: `w_${i}`,
+                        latex: `w_{${i}}=${v}`,
+                    })),
+                    {
+                        id: 'n_hidden1',
+                        latex: "f_{hidden1}\\left(z,x,y\\right)=\\frac{1}{1+e^{-\\left(w_{0}+w_{1}x+w_{2}y\\right)}}",
+                    },
+                    {
+                        id: 'n_hidden2',
+                        latex: "f_{hidden2}\\left(z,x,y\\right)=\\frac{1}{1+e^{-\\left(w_{3}+w_{4}x+w_{5}y\\right)}}",
+                    },
+                    {
+                        id: 'hidden_layer1',
+                        latex: "\\left[f_{hidden1}\\left(z,x,y\\right),f_{hidden2}\\left(z,x,y\\right)\\right]",
+                        color: "#ababab",
+                        hidden: true,
+                    },
+                    {
+                        id: 'n3',
+                        latex: "f_{out}\\left(z,x,y\\right)=\\frac{1}{1+e^{-\\left(w_{6}+w_{7}f_{hidden1}\\left(z,x,y\\right)+w_{8}f_{hidden2}\\left(z,x,y\\right)\\right)}}",
+                    },
+                    {
+                        id: 'n3_negative',
+                        latex: "f_{out}(z,x,y)\\left\\{z<0.5\\right\\}",
+                        color: Desmos.Colors.BLUE,
+                    },
+                    {
+                        id: 'n3_positive',
+                        latex: "f_{out}(z,x,y)\\left\\{z\\ge0.5\\right\\}",
+                        color: Desmos.Colors.RED,
+                    },
+                    ...D.map(([x, d], i) => ({
+                        id: `point_${i}`,
+                        latex: `P_{${i}}=(${x.at(0)}, ${x.at(1)}, 0.5)`,
+                        pointSize: 3,
+                        color: y_train[i] >= 0.5 ? Desmos.Colors.RED : Desmos.Colors.BLUE,
+                    })),
+                ]);
+            }
+
+            const $step = calculator.HelperExpression({ latex: "t_{step}" })
+            $step.observe("numericValue.magnitude", (_, { numericValue }) => {
+                update(numericValue);
+            });
+        </script>
+    </body>
+</html>

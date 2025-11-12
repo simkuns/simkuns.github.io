@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./calculator.js"></script>
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            #calculator {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="calculator"></div>
+        <script type="module">
+            import { predict, train_epoch } from "./single_binary.js";
+
+            const el = document.getElementById("calculator");
+            const calculator = Desmos.Calculator3D(el, {
+                invertedColors: true,
+                translucentSurfaces: true,
+                // perspectiveDistortion: 20,
+            });
+
+            const Y_REAL = [
+                predict([1, 0, 0], [3, -2, -2]),
+                predict([1, 0, 1], [3, -2, -2]),
+                predict([1, 1, 0], [3, -2, -2]),
+                predict([1, 1, 1], [3, -2, -2]),
+            ];
+            console.log("real: ", Y_REAL); // Array(4) [ 1, 1, 1, 0 ]
+
+            // NAND
+            const D = [
+                [[1, 0, 0], 1],
+                [[1, 0, 1], 1],
+                [[1, 1, 0], 1],
+                [[1, 1, 1], 0],
+            ];
+
+            const R = 0.05;
+            const STEPS = 150;
+            const SNAPSHOTS = [
+                snap(Array.from({ length: 3 }, () => format(Math.random() * 10 - 5))),
+            ];
+            for (let step = 1; step < STEPS; step++) {
+                SNAPSHOTS.push(
+                    snap(
+                        train_epoch(D, SNAPSHOTS[step-1].w, R),
+                    ),
+                );
+            }
+
+            function format(n) {
+                return Number(n.toFixed(4));
+            }
+
+            function snap(w) {
+                return {
+                    w,
+                    y_train: [
+                        predict([1, 0, 0], w),
+                        predict([1, 0, 1], w),
+                        predict([1, 1, 0], w),
+                        predict([1, 1, 1], w),
+                    ],
+                };
+            }
+
+            function init() {
+                calculator.setExpressions([
+                    {
+                        id: 'note1',
+                        type: 'text',
+                        text: 'refresh page for new random initial values',
+                    },
+                    {
+                        id: "step",
+                        latex: "t_{step}=0",
+                        sliderBounds: {min: 0, max: STEPS - 1, step: 1},
+                    },
+                ]);
+            }
+            init();
+
+            function update(step = 0) {
+                const { w, y_train } = SNAPSHOTS[step];
+
+                calculator.setExpressions([
+                    {
+                        id: 'table1',
+                        type: 'table',
+                        columns: [
+                            {
+                                latex: 'x_{1}',
+                                values: D.flatMap(([x, d]) => x.at(1)),
+                            },
+                            {
+                                latex: 'x_{2}',
+                                values: D.flatMap(([x, d]) => x.at(2)),
+                            },
+                            {
+                                latex: 'y_{real}',
+                                values: Y_REAL,
+                            },
+                            {
+                                latex: 'y_{train}',
+                                values: y_train,
+                            },
+                        ],
+                    },
+                    ...w.map((v, i) => ({
+                        id: `w_${i}`,
+                        latex: `w_{${i}}=${v}`,
+                    })),
+                    {
+                        id: 'boundary',
+                        latex: `f(z,x,y)=w_{0}+w_{1}x+w_{2}y`,
+                        color: Desmos.Colors.BLACK,
+                    },
+                    {
+                        id: 'boundary_negative',
+                        latex: "f(z,x,y)\\left\\{z<0\\right\\}",
+                        color: Desmos.Colors.BLUE,
+                    },
+                    {
+                        id: 'boundary_positive',
+                        latex: 'f(z,x,y)\\left\\{z>0\\right\\}',
+                        color: Desmos.Colors.RED,
+                    },
+                    ...D.map(([x, d], i) => ({
+                        id: `point_${i}`,
+                        latex: `P_{${i}}=(${x.at(1)}, ${x.at(2)}, 0)`,
+                        pointSize: 3,
+                        color: y_train[i] > 0 ? Desmos.Colors.RED : Desmos.Colors.BLUE,
+                    })),
+                ]);
+            }
+
+            const $step = calculator.HelperExpression({ latex: "t_{step}" })
+            $step.observe("numericValue.magnitude", (_, { numericValue }) => {
+                update(numericValue);
+            });
+        </script>
+    </body>
+</html>
